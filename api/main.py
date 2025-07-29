@@ -14,6 +14,9 @@ import io
 
 app = FastAPI()
 
+from fastapi.staticfiles import StaticFiles
+
+app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
 from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
