@@ -2,6 +2,11 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi import UploadFile, File
+from api.retrain import retrain_cnn_model
+import shutil
+import os
+from zipfile import ZipFile
 import tensorflow as tf
 import numpy as np
 from PIL import Image
@@ -18,6 +23,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+RETRAIN_DIR = "retrain_data"
+os.makedirs(RETRAIN_DIR, exist_ok=True)
+
 
 # Serve static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -54,3 +64,20 @@ async def predict(file: UploadFile = File(...)):
         "prediction": predicted_class,
         "confidence": round(confidence, 3)
     })
+
+@app.post("/retrain/")
+async def retrain_model(file: UploadFile = File(...)):
+    zip_path = f"{RETRAIN_DIR}/{file.filename}"
+    
+    # Save uploaded ZIP
+    with open(zip_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    # Unzip contents
+    with ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extractall(RETRAIN_DIR)
+    
+    # Trigger retraining logic
+    retrain_cnn_model(RETRAIN_DIR)
+
+    return {"message": "Retraining completed and model updated."}
