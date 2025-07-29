@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fruit Classifier</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      max-width: 600px;
+      margin: auto;
+    }
+    input[type="file"] {
+      margin-bottom: 1rem;
+    }
+    img {
+      max-width: 100%;
+      margin-top: 1rem;
+    }
+    .result {
+      margin-top: 2rem;
+      font-size: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>🍎 Fruit Classifier</h1>
+
+  <label for="fileInput">Select an image file:</label>
+  <input type="file" id="fileInput" accept="image/*" title="Choose an image file to classify">
+  <button onclick="predict()">Predict</button>
+
+  <div class="result" id="result"></div>
+  <img id="preview" src="" alt="Selected fruit preview" />
+
+  <script>
+    async function predict() {
+      const fileInput = document.getElementById('fileInput');
+      const file = fileInput.files[0];
+      if (!file) {
+        alert("Please select an image file.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // Preview selected image
+      const preview = document.getElementById('preview');
+      preview.src = URL.createObjectURL(file);
+
+      // Send request
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = "Predicting...";
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/predict/", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          resultDiv.innerHTML = `✅ Prediction: <b>${data.prediction}</b><br>🎯 Confidence: <b>${(data.confidence * 100).toFixed(2)}%</b>`;
+        } else {
+          resultDiv.innerHTML = `❌ Error: ${JSON.stringify(data)}`;
+        }
+      } catch (err) {
+        resultDiv.innerHTML = `❌ Exception: ${err}`;
+      }
+    }
+  </script>
+</body>
+</html>
