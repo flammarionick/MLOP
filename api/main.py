@@ -56,17 +56,26 @@ def preprocess_image(image_bytes):
 # Prediction endpoint
 @app.post("/predict/")
 async def predict(file: UploadFile = File(...)):
-    image_bytes = await file.read()
-    image_array = preprocess_image(image_bytes)
-    
-    predictions = model.predict(image_array)
-    predicted_class = class_labels[np.argmax(predictions[0])]
-    confidence = float(np.max(predictions[0]))
+    try:
+        image_bytes = await file.read()
+        image_array = preprocess_image(image_bytes)
+        
+        predictions = model.predict(image_array)
+        predicted_class = class_labels[np.argmax(predictions[0])]
+        confidence = float(np.max(predictions[0]))
 
-    return JSONResponse({
-        "prediction": predicted_class,
-        "confidence": round(confidence, 3)
-    })
+        return JSONResponse({
+            "prediction": predicted_class,
+            "confidence": round(confidence, 3)
+        })
+    
+    except Exception as e:
+        # This ensures FastAPI still returns valid JSON on error
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Prediction failed: {str(e)}"}
+        )
+
 
 @app.post("/retrain/")
 async def retrain_model(file: UploadFile = File(...)):
