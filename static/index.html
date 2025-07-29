@@ -22,6 +22,10 @@
       margin-top: 2rem;
       font-size: 1.2rem;
     }
+    progress {
+      width: 100%;
+      margin-top: 1rem;
+    }
   </style>
 </head>
 <body>
@@ -46,13 +50,11 @@
       const formData = new FormData();
       formData.append("file", file);
 
-      // Preview selected image
       const preview = document.getElementById('preview');
       preview.src = URL.createObjectURL(file);
 
-      // Send request
       const resultDiv = document.getElementById('result');
-      resultDiv.innerHTML = "Predicting...";
+      resultDiv.innerHTML = "⏳ Predicting...";
 
       try {
         const response = await fetch("http://127.0.0.1:8000/predict/", {
@@ -72,22 +74,88 @@
     }
   </script>
 
-  <h2>Model Visualizations</h2>
+  <hr>
+  <h2>🔁 Retrain Model</h2>
 
-<div>
-  <h3>Class Distribution</h3>
-  <img src="/outputs/class_distribution.png" width="500" alt="Class distribution chart" />
-</div>
+  <label for="retrainZip">Upload a ZIP of training images:</label>
+  <input type="file" id="retrainZip" accept=".zip" title="ZIP must contain folders named after each class" />
+  <button onclick="uploadRetrainZip()">Retrain Model</button>
 
-<div>
-  <h3>Training Curves</h3>
-  <img src="/outputs/training_curves.png" width="500" alt="Training curves" />
-</div>
+  <progress id="uploadProgress" value="0" max="100" style="display:none;"></progress>
+  <div class="result" id="retrainResult"></div>
 
-<div>
-  <h3>Prediction Confidence</h3>
-  <img src="/outputs/confidence_histogram.png" width="500" alt="Prediction confidence histogram" />
-</div>
+  <script>
+    function refreshVisualizations() {
+      const timestamp = new Date().getTime();
+      document.querySelector('img[src*="class_distribution.png"]').src = `/outputs/class_distribution.png?${timestamp}`;
+      document.querySelector('img[src*="training_curves.png"]').src = `/outputs/training_curves.png?${timestamp}`;
+      document.querySelector('img[src*="confidence_histogram.png"]').src = `/outputs/confidence_histogram.png?${timestamp}`;
+    }
+
+    async function uploadRetrainZip() {
+      const fileInput = document.getElementById("retrainZip");
+      const file = fileInput.files[0];
+      const resultDiv = document.getElementById("retrainResult");
+      const progressBar = document.getElementById("uploadProgress");
+
+      if (!file) {
+        alert("Please select a ZIP file.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      resultDiv.innerHTML = "⏳ Uploading and retraining...";
+      progressBar.style.display = "block";
+      progressBar.value = 0;
+
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "http://127.0.0.1:8000/retrain/", true);
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const percentComplete = (e.loaded / e.total) * 100;
+          progressBar.value = percentComplete;
+        }
+      };
+
+      xhr.onload = () => {
+        progressBar.style.display = "none";
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          resultDiv.innerHTML = `✅ ${response.message}`;
+          refreshVisualizations();
+        } else {
+          resultDiv.innerHTML = `❌ Error: ${xhr.responseText}`;
+        }
+      };
+
+      xhr.onerror = () => {
+        progressBar.style.display = "none";
+        resultDiv.innerHTML = `❌ Upload failed.`;
+      };
+
+      xhr.send(formData);
+    }
+  </script>
+
+  <h2>📊 Model Visualizations</h2>
+
+  <div>
+    <h3>Class Distribution</h3>
+    <img src="/outputs/class_distribution.png" width="500" alt="Class distribution chart" />
+  </div>
+
+  <div>
+    <h3>Training Curves</h3>
+    <img src="/outputs/training_curves.png" width="500" alt="Training curves" />
+  </div>
+
+  <div>
+    <h3>Prediction Confidence</h3>
+    <img src="/outputs/confidence_histogram.png" width="500" alt="Prediction confidence histogram" />
+  </div>
 
 </body>
 </html>
