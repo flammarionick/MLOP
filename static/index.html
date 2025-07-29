@@ -1,30 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Fruit Classifier</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Poppins', sans-serif;
       padding: 2rem;
       max-width: 600px;
       margin: auto;
+      background-color: #f9f9f9;
     }
+
+    h1, h2, h3 {
+      color: #333;
+    }
+
     input[type="file"] {
       margin-bottom: 1rem;
     }
+
+    button {
+      padding: 0.6rem 1.2rem;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin-top: 0.3rem;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
     img {
       max-width: 100%;
       margin-top: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
     }
+
     .result {
-      margin-top: 2rem;
-      font-size: 1.2rem;
+      margin-top: 1.5rem;
+      font-size: 1.1rem;
+      color: #222;
+      padding: 0.5rem;
     }
+
+    .success {
+      background-color: #e6ffed;
+      border-left: 5px solid #28a745;
+    }
+
+    .error {
+      background-color: #ffe6e6;
+      border-left: 5px solid #dc3545;
+    }
+
     progress {
       width: 100%;
       margin-top: 1rem;
+    }
+
+    hr {
+      margin: 2rem 0;
     }
   </style>
 </head>
@@ -32,16 +76,45 @@
   <h1>🍎 Fruit Classifier</h1>
 
   <label for="fileInput">Select an image file:</label>
-  <input type="file" id="fileInput" accept="image/*" title="Choose an image file to classify">
+  <input type="file" id="fileInput" accept="image/*">
   <button onclick="predict()">Predict</button>
 
   <div class="result" id="result"></div>
   <img id="preview" src="" alt="Selected fruit preview" />
 
+  <hr>
+  <h2>🔁 Retrain Model</h2>
+  <label for="retrainZip">Upload a ZIP of training images:</label>
+  <input type="file" id="retrainZip" accept=".zip" />
+  <button onclick="uploadRetrainZip()">Retrain Model</button>
+
+  <progress id="uploadProgress" value="0" max="100" style="display:none;"></progress>
+  <div class="result" id="retrainResult"></div>
+  <p id="lastRefresh" style="font-size: 0.9rem; color: #666;"></p>
+
+  <h2>📊 Model Visualizations</h2>
+  <div>
+    <h3>Class Distribution</h3>
+    <img src="/outputs/class_distribution.png" width="500" alt="Class distribution chart" />
+  </div>
+
+  <div>
+    <h3>Training Curves</h3>
+    <img src="/outputs/training_curves.png" width="500" alt="Training curves" />
+  </div>
+
+  <div>
+    <h3>Prediction Confidence</h3>
+    <img src="/outputs/confidence_histogram.png" width="500" alt="Prediction confidence histogram" />
+  </div>
+
   <script>
     async function predict() {
       const fileInput = document.getElementById('fileInput');
       const file = fileInput.files[0];
+      const resultDiv = document.getElementById('result');
+      const preview = document.getElementById('preview');
+
       if (!file) {
         alert("Please select an image file.");
         return;
@@ -49,11 +122,9 @@
 
       const formData = new FormData();
       formData.append("file", file);
-
-      const preview = document.getElementById('preview');
       preview.src = URL.createObjectURL(file);
 
-      const resultDiv = document.getElementById('result');
+      resultDiv.className = "result";
       resultDiv.innerHTML = "⏳ Predicting...";
 
       try {
@@ -64,27 +135,19 @@
 
         const data = await response.json();
         if (response.ok) {
+          resultDiv.classList.add("success");
           resultDiv.innerHTML = `✅ Prediction: <b>${data.prediction}</b><br>🎯 Confidence: <b>${(data.confidence * 100).toFixed(2)}%</b>`;
+          resultDiv.scrollIntoView({ behavior: "smooth" });
         } else {
+          resultDiv.classList.add("error");
           resultDiv.innerHTML = `❌ Error: ${JSON.stringify(data)}`;
         }
       } catch (err) {
+        resultDiv.classList.add("error");
         resultDiv.innerHTML = `❌ Exception: ${err}`;
       }
     }
-  </script>
 
-  <hr>
-  <h2>🔁 Retrain Model</h2>
-
-  <label for="retrainZip">Upload a ZIP of training images:</label>
-  <input type="file" id="retrainZip" accept=".zip" title="ZIP must contain folders named after each class" />
-  <button onclick="uploadRetrainZip()">Retrain Model</button>
-
-  <progress id="uploadProgress" value="0" max="100" style="display:none;"></progress>
-  <div class="result" id="retrainResult"></div>
-
-  <script>
     function refreshVisualizations() {
       const timestamp = new Date().getTime();
       document.querySelector('img[src*="class_distribution.png"]').src = `/outputs/class_distribution.png?${timestamp}`;
@@ -97,6 +160,7 @@
       const file = fileInput.files[0];
       const resultDiv = document.getElementById("retrainResult");
       const progressBar = document.getElementById("uploadProgress");
+      const lastRefresh = document.getElementById("lastRefresh");
 
       if (!file) {
         alert("Please select a ZIP file.");
@@ -106,6 +170,7 @@
       const formData = new FormData();
       formData.append("file", file);
 
+      resultDiv.className = "result";
       resultDiv.innerHTML = "⏳ Uploading and retraining...";
       progressBar.style.display = "block";
       progressBar.value = 0;
@@ -124,38 +189,26 @@
         progressBar.style.display = "none";
         if (xhr.status === 200) {
           const response = JSON.parse(xhr.responseText);
+          resultDiv.classList.add("success");
           resultDiv.innerHTML = `✅ ${response.message}`;
           refreshVisualizations();
+
+          const timeNow = new Date().toLocaleTimeString();
+          lastRefresh.textContent = `🕓 Visualizations last updated: ${timeNow}`;
         } else {
+          resultDiv.classList.add("error");
           resultDiv.innerHTML = `❌ Error: ${xhr.responseText}`;
         }
       };
 
       xhr.onerror = () => {
         progressBar.style.display = "none";
+        resultDiv.classList.add("error");
         resultDiv.innerHTML = `❌ Upload failed.`;
       };
 
       xhr.send(formData);
     }
   </script>
-
-  <h2>📊 Model Visualizations</h2>
-
-  <div>
-    <h3>Class Distribution</h3>
-    <img src="/outputs/class_distribution.png" width="500" alt="Class distribution chart" />
-  </div>
-
-  <div>
-    <h3>Training Curves</h3>
-    <img src="/outputs/training_curves.png" width="500" alt="Training curves" />
-  </div>
-
-  <div>
-    <h3>Prediction Confidence</h3>
-    <img src="/outputs/confidence_histogram.png" width="500" alt="Prediction confidence histogram" />
-  </div>
-
 </body>
 </html>
