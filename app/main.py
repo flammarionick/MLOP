@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi import UploadFile, File
-from api.retrain import retrain_cnn_model
+from app.retrain import retrain_cnn_model
 import shutil
 import os
 from zipfile import ZipFile
@@ -15,8 +15,16 @@ import io
 app = FastAPI()
 
 from fastapi.staticfiles import StaticFiles
+# 👇 Define BASE_DIR first
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
+model_path = os.path.join(BASE_DIR, "models", "best_model.h5")
+model = tf.keras.models.load_model(model_path)
+
+
+from pathlib import Path
+app.mount("/outputs", StaticFiles(directory=Path(__file__).parent / "outputs"), name="outputs")
+
 from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
@@ -33,7 +41,7 @@ os.makedirs(RETRAIN_DIR, exist_ok=True)
 
 
 # Serve static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 @app.get("/", response_class=FileResponse)
 async def root():
