@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi import UploadFile, File
-from retrain import retrain_cnn_model
+from api.retrain import retrain_cnn_model
 import shutil
 import os
 from zipfile import ZipFile
