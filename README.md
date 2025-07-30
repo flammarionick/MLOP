@@ -1,5 +1,4 @@
-# Fruit Classifier 🍎🍌🍇
-
+# Fruit Classifier 
 A computer vision web application that classifies fruits using a Convolutional Neural Network (CNN). The app allows users to upload images of fruits for prediction and supports retraining the model using bulk image uploads via a user interface.
 
 
@@ -7,7 +6,7 @@ A computer vision web application that classifies fruits using a Convolutional N
 
 **Deployed App:** [https://fruit-classifier-6dc2.onrender.com]
 
-**📽️ Video Demo:** [YouTube Link]
+** Video Demo:** [YouTube Link]
 
 
 ## GitHub Repo
@@ -75,7 +74,7 @@ These are automatically updated when retraining is completed.
 - Preprocessing is triggered automatically
 - CNN model is retrained and saved
 
-### 📊 Real-time Monitoring
+### Real-time Monitoring
 - Progress bar during retraining
 - UI refresh for new visualizations
 
