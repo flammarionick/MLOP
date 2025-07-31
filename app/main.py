@@ -2,8 +2,7 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-
-from retrain import retrain_cnn_model
+from app.retrain import retrain_cnn_model
 
 import os
 import shutil
@@ -88,19 +87,19 @@ os.makedirs(RETRAIN_DIR, exist_ok=True)
 async def retrain_model(file: UploadFile = File(...)):
     try:
         zip_path = os.path.join(RETRAIN_DIR, file.filename)
-
-        # Save ZIP
+        
         with open(zip_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        # Extract
         with ZipFile(zip_path, 'r') as zip_ref:
             zip_ref.extractall(RETRAIN_DIR)
 
-        # Retrain logic
         retrain_cnn_model(RETRAIN_DIR)
 
-        return {"message": "Retraining completed and model updated."}
+        # 👇 Reload model after retraining
+        global model
+        model = tf.keras.models.load_model(model_path)
 
+        return {"message": "Retraining completed and model updated."}
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": f"Retraining failed: {str(e)}"})

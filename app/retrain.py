@@ -8,9 +8,18 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
-def retrain_cnn_model(data_dir, model_path="models/best_model.h5", epochs=5):
+def retrain_cnn_model(data_dir, model_path=None, epochs=5):
     image_size = (64, 64)
     batch_size = 32
+
+    # 👇 Use absolute path for model directory
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    models_dir = os.path.join(BASE_DIR, "models")
+    os.makedirs(models_dir, exist_ok=True)
+
+    # If no model path is explicitly given, default to models/best_model.h5
+    if model_path is None:
+        model_path = os.path.join(models_dir, "best_model.h5")
 
     # Generate unique suffix for layer naming
     suffix = str(int(time.time()))
@@ -58,11 +67,12 @@ def retrain_cnn_model(data_dir, model_path="models/best_model.h5", epochs=5):
     # Train
     history = new_model.fit(train_gen, validation_data=val_gen, epochs=epochs)
 
-    # Save model
+    # ✅ Save the retrained model safely
     new_model.save(model_path)
 
     # Create output directory for visualizations
-    os.makedirs("outputs", exist_ok=True)
+    outputs_dir = os.path.join(BASE_DIR, "outputs")
+    os.makedirs(outputs_dir, exist_ok=True)
 
     # 1. 📊 Class distribution plot
     labels, counts = np.unique(train_gen.classes, return_counts=True)
@@ -74,7 +84,7 @@ def retrain_cnn_model(data_dir, model_path="models/best_model.h5", epochs=5):
     plt.ylabel("Image Count")
     plt.xticks(rotation=45)
     plt.tight_layout()
-    plt.savefig("outputs/class_distribution.png")
+    plt.savefig(os.path.join(outputs_dir, "class_distribution.png"))
     plt.close()
 
     # 2. 📈 Accuracy/Loss curve
@@ -88,7 +98,7 @@ def retrain_cnn_model(data_dir, model_path="models/best_model.h5", epochs=5):
     plt.ylabel('Value')
     plt.legend()
     plt.tight_layout()
-    plt.savefig("outputs/training_curves.png")
+    plt.savefig(os.path.join(outputs_dir, "training_curves.png"))
     plt.close()
 
     # 3. 🔍 Confidence histogram
@@ -102,7 +112,7 @@ def retrain_cnn_model(data_dir, model_path="models/best_model.h5", epochs=5):
     plt.xlabel("Confidence")
     plt.ylabel("Frequency")
     plt.tight_layout()
-    plt.savefig("outputs/confidence_histogram.png")
+    plt.savefig(os.path.join(outputs_dir, "confidence_histogram.png"))
     plt.close()
 
     print("✅ Retraining complete. Model saved. Visualizations saved in /outputs")
