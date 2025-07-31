@@ -6,7 +6,7 @@ A computer vision web application that classifies fruits using a Convolutional N
 
 **Deployed App:** [https://fruit-classifier-6dc2.onrender.com]
 
-** Video Demo:** [YouTube Link]
+** Video Demo:** [(https://youtu.be/38l8tSbHW5M)]
 
 
 ## GitHub Repo
